@@ -1,0 +1,16 @@
+[project]
+name = "moneyexchange-api"
+version = "0.1.0"
+description = "MoneyExchange API is a Django-based application providing currency exchange rates, user balance management, and transaction history. The API integrates with an external ExchangeRate API, uses JWT authentication, and is containerized using Docker and managed via Poetry."
+authors = [
+    {name = "Mike Shmygel",email = "m.shmygel@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
