@@ -1,4 +1,3 @@
-
 # MoneyExchange API
 
 **MoneyExchange API** is a Django-based application that provides currency exchange rates, user balance management, and transaction history. The API integrates with an external ExchangeRate API, uses JWT authentication, and is fully containerized using Docker and managed via Poetry.
@@ -11,11 +10,12 @@
 - [Requirements](#requirements)
 - [Installation & Configuration](#installation--configuration)
 - [Running the Project with Docker Compose](#running-the-project-with-docker-compose)
+- [Database Migrations](#database-migrations)
 - [API Endpoints](#api-endpoints)
+- [Admin Panel](#admin-panel)
 - [API Documentation](#api-documentation)
 - [Running Tests](#running-tests)
 - [Project Structure](#project-structure)
-
 
 ---
 
@@ -27,6 +27,7 @@
 - **Exchange History:** Get a list of previous currency exchange requests with optional filtering by currency code and date.
 - **JWT Authentication:** Secure API endpoints using JWT tokens.
 - **Interactive API Documentation:** Swagger and Redoc provide full API documentation.
+- **Admin Panel:** Jazzmin-enhanced Django Admin for user and transaction management.
 - **Fully Dockerized:** The entire application (including PostgreSQL) runs via Docker Compose.
 
 ---
@@ -93,10 +94,27 @@ This command will:
 
 - Build the Docker image for the web service using the provided Dockerfile.
 - Start the PostgreSQL service.
-- Apply Django migrations.
 - Launch the Django development server on port `8000`.
 
 Access the application at: [http://localhost:8000](http://localhost:8000)
+
+---
+
+## Database Migrations
+
+After the containers are up, apply database migrations:
+
+```bash
+docker-compose exec web poetry run python manage.py migrate
+```
+
+If you need to create a superuser for the admin panel:
+
+```bash
+docker-compose exec web poetry run python manage.py createsuperuser
+```
+
+Follow the prompts to enter the username, email, and password.
 
 ---
 
@@ -155,6 +173,18 @@ Access the application at: [http://localhost:8000](http://localhost:8000)
 
 ---
 
+## Admin Panel
+
+The project includes an enhanced **Django Admin Panel** powered by **Jazzmin**.
+
+### **Access the admin panel**:
+
+- URL: [http://localhost:8000/admin/](http://localhost:8000/admin/)
+- Login using the superuser credentials created earlier.
+- Manage users, transactions, and balance records.
+
+---
+
 ## API Documentation
 
 Interactive API documentation is available at:
@@ -173,20 +203,20 @@ The project uses `pytest` and `pytest-django` for testing.
 ### Run tests:
 
 ```bash
-poetry run pytest
+docker-compose exec web poetry run pytest
 ```
 
 ### Generate a coverage report:
 
 ```bash
-poetry run coverage run --source=. -m pytest
-poetry run coverage report
+docker-compose exec web poetry run coverage run --source=. -m pytest
+docker-compose exec web poetry run coverage report
 ```
 
 ### Generate an HTML coverage report:
 
 ```bash
-poetry run coverage html
+docker-compose exec web poetry run coverage html
 ```
 
 Then open the `htmlcov/index.html` file in your browser.
@@ -217,5 +247,4 @@ moneyexchange-api/
 ├── docker-compose.yml
 ├── pyproject.toml
 └── README.md
-```
 ```
