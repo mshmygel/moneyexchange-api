@@ -15,10 +15,26 @@ dependencies = [
     "python-dotenv (>=1.0.1,<2.0.0)",
     "psycopg2-binary (>=2.9.10,<3.0.0)",
     "django-debug-toolbar (>=5.0.1,<6.0.0)",
-    "django-jazzmin (>=3.0.1,<4.0.0)"
+    "django-jazzmin (>=3.0.1,<4.0.0)",
+    "drf-yasg (>=1.21.10,<2.0.0)",
+    "pytest (>=8.3.5,<9.0.0)"
 ]
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+pytest-django = "^4.10.0"
+coverage = "^7.7.0"
+
+
+[tool.pytest.ini_options]
+python_files = [
+    "test_*.py",
+    "*_test.py"
+]
+DJANGO_SETTINGS_MODULE = "moneyexchange_project.settings"
+

@@ -46,8 +46,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
     "rest_framework",
-
     "api",
+    "drf_yasg",
 ]
 
 MIDDLEWARE = [
@@ -144,7 +144,8 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=120),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
 
+SWAGGER_USE_COMPAT_RENDERERS = False
