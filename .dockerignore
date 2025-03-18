@@ -1,22 +1,53 @@
-__pycache__
+# Ignore Python cache and compiled files
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.swp  # Swap files from editors
 
-.venv
+# Ignore virtual environments
+.venv/
 env/
 venv/
 
-.git
+# Ignore Git-related files
+.git/
 .gitignore
 
+# Ignore Docker-related files (except required ones)
+.dockerignore
 Dockerfile
 docker-compose.yml
 
-*.log
-.local_settings.py
-
+# Ignore environment variables and credentials
 .env
+.env.sample
+*.pem  # SSL/TLS certificates
+*.key  # Private keys
 
+# Ignore logs and debug artifacts
+logs/
+*.log
+debug.log
+local_settings.py
+
+# Ignore database files (if using SQLite for local development)
+*.sqlite3
+
+# Ignore IDE and editor configs
 .idea/
 .vscode/
+*.bak
+*.tmp
+
+# Ignore test coverage reports
+.coverage
+htmlcov/
+
+# Ignore build artifacts and distribution files
+dist/
+build/
+*.egg-info/
+
+# Ignore Poetry cache (if any)
+poetry.lock

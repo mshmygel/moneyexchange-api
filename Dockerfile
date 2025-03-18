@@ -4,8 +4,12 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+# Create a non-root user
+RUN addgroup --system appgroup && adduser --system --group --no-create-home appuser
+
 # directory
 WORKDIR /app
+USER appuser
 
 # system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
