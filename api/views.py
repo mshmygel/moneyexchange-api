@@ -1,17 +1,22 @@
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
+import os
+import requests
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from django.utils.dateparse import parse_date
+
 from rest_framework import status, generics, permissions
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+
 from .models import CurrencyExchange, UserBalance
 from .serializers import (
     UserRegistrationSerializer,
     UserBalanceSerializer,
     CurrencyExchangeSerializer,
 )
-import requests
-import os
+
 
 
 class RegistrationAPIView(APIView):
@@ -128,6 +133,11 @@ class CurrencyExchangeAPIView(APIView):
         if not currency_code:
             return Response({"error": "Currency code is required."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Check if the user has enough balance (decrement by 1 coin per request)
+        balance_obj = request.user.balance
+        if balance_obj.balance <= 0:
+            return Response({"error": "Insufficient balance."}, status=status.HTTP_403_FORBIDDEN)
+
         # Retrieve the exchange API URL and key from environment variables
         exchange_api_url = os.getenv("EXCHANGE_RATE_API_URL", "https://api.exchangerate-api.com/v4/latest")
         exchange_api_key = os.getenv("EXCHANGE_RATE_API_KEY", "")
@@ -138,34 +148,31 @@ class CurrencyExchangeAPIView(APIView):
         # URL format: https://v6.exchangerate-api.com/v6/<API_KEY>/latest/<CURRENCY_CODE>
         api_url = f"{exchange_api_url}/{exchange_api_key}/latest/{currency_code}"
         try:
-            response = requests.get(api_url)
+            response = requests.get(api_url, timeout=5)
             if response.status_code != 200:
-                return Response({"error": "Failed to retrieve exchange rate."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "Failed to retrieve exchange rate."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             data = response.json()
             # Retrieve the exchange rate for UAH from the conversion_rates field
             rate = data.get("conversion_rates", {}).get("UAH")
             if rate is None:
-                return Response({"error": "Exchange rate for UAH not found."}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({"error": "Error contacting exchange rate API."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        # Check if the user has enough balance (decrement by 1 coin per request)
-        balance_obj = request.user.balance
-        if balance_obj.balance <= 0:
-            return Response({"error": "Insufficient balance."}, status=status.HTTP_403_FORBIDDEN)
+                return Response({"error": "Exchange rate for UAH not found."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except requests.RequestException as e:
+            return Response({"error": f"Error contacting exchange rate API: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         # Decrement the balance and save
         balance_obj.balance -= 1
         balance_obj.save()
 
         # Create a new CurrencyExchange record
-        exchange_record = CurrencyExchange.objects.create(
+        exchange_record = CurrencyExchange(
             user=request.user,
             currency_code=currency_code,
             rate=rate
         )
+        exchange_record.save()
+
         serializer = CurrencyExchangeSerializer(exchange_record)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class HistoryView(generics.ListAPIView):
@@ -190,9 +197,15 @@ class HistoryView(generics.ListAPIView):
                 type=openapi.TYPE_STRING
             ),
             openapi.Parameter(
-                "date",
+                "start_date",
                 openapi.IN_QUERY,
-                description="Filter by date in YYYY-MM-DD format",
+                description="Start date for filtering history (YYYY-MM-DD)",
+                type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                "end_date",
+                openapi.IN_QUERY,
+                description="End date for filtering history (YYYY-MM-DD)",
                 type=openapi.TYPE_STRING
             ),
         ]
@@ -209,10 +222,25 @@ class HistoryView(generics.ListAPIView):
         and optionally by currency_code and date provided as query parameters.
         """
         queryset = CurrencyExchange.objects.filter(user=self.request.user)
+
         currency_code = self.request.query_params.get("currency_code")
-        date = self.request.query_params.get("date")
+        start_date = self.request.query_params.get("start_date")
+        end_date = self.request.query_params.get("end_date")
+
         if currency_code:
             queryset = queryset.filter(currency_code=currency_code)
-        if date:
-            queryset = queryset.filter(created_at__date=date)
+
+        start_date = parse_date(start_date) if start_date else None
+        end_date = parse_date(end_date) if end_date else None
+
+        if (start_date and end_date) and start_date > end_date:
+            return queryset.none()
+
+        if start_date and end_date:
+            queryset = queryset.filter(created_at__date__range=[start_date, end_date])
+        elif start_date:
+            queryset = queryset.filter(created_at__date__gte=start_date)
+        elif end_date:
+            queryset = queryset.filter(created_at__date__lte=end_date)
+
         return queryset
